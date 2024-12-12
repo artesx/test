@@ -1,0 +1,96 @@
+version: '3.6'
+services:
+#  test_work:
+#    container_name: test_work
+#    env_file:
+#      - .env
+#    build:
+#      context: .
+#    restart: unless-stopped
+#    ports:
+#      - "5004:5004"
+
+  test_work_db:
+    image: postgres
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - '5441:5432'
+    environment:
+      POSTGRES_USER: test_work
+      POSTGRES_PASSWORD: 'test_work'
+
+  test_work_redis:
+    image: redis:latest
+    restart: always
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6385:6379"
+
+  test_work_redis_commander:
+    image: rediscommander/redis-commander
+    ports:
+      - "8085:8081"
+    environment:
+      REDIS_HOST: test_work_redis
+    depends_on:
+      - test_work_redis
+
+  zookeeper_test_work:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2182:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka_test_work:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper_test_work:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT_INTERNAL://0.0.0.0:9093,PLAINTEXT_EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_INTERNAL://kafka_test_work:9093,PLAINTEXT_EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_MESSAGE_MAX_BYTES: "104857600"
+      KAFKA_REPLICA_FETCH_MAX_BYTES: "104857600"
+      KAFKA_FETCH_MAX_BYTES: "104857600"
+    depends_on:
+      - zookeeper_test_work
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: kafdrop
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka_test_work:9093"
+      JVM_OPTS: "-Xms32M -Xmx64M"
+    depends_on:
+      - kafka_test_work
+
+  pgweb:
+    restart: always
+    image: sosedoff/pgweb
+    ports:
+      - '7081:8081'
+    environment:
+      - DATABASE_URL=postgres://test_work:test_work@test_work_db/test_work?sslmode=disable
+    depends_on:
+      - test_work_db
+
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
