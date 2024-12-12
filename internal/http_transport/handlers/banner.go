@@ -3,7 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"test-work/internal/services"
+	"test-work/internal/services/banner"
 
 	"github.com/labstack/echo/v4"
 )
@@ -22,30 +24,33 @@ func Banner(serviceLayer *services.ServiceLayer) func(c echo.Context) error {
 	}
 }
 
-//func CreateTrade(serviceLayer *services.ServiceLayer, ctx context.Context) func(c echo.Context) error {
-//	return func(c echo.Context) error {
-//
-//		body := &domain.CreateTradeRequest{}
-//
-//		if err := c.Bind(body); err != nil {
-//			fmt.Println("CREATE TRADE BIND BODY ERROR", err, body)
-//			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-//		}
-//
-//		if err := c.Validate(body); err != nil {
-//			fmt.Println("CREATE TRADE Validate BODY ERROR", err, body)
-//			return err
-//		}
-//
-//		result, err := serviceLayer.Trade.CreateTrade(ctx, body)
-//
-//		if err != nil {
-//			return writeJSON(c, http.StatusInternalServerError, err.Error())
-//		}
-//
-//		return writeJSON(c, http.StatusOK, result)
-//	}
-//}
+func GetStatistic(serviceLayer *services.ServiceLayer) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		body := &banner.GetStatisticBody{}
+
+		if err := c.Bind(body); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		bannerParam := c.Param("bannerID")
+
+		bannerID, err := strconv.ParseInt(bannerParam, 10, 64)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		result, err := serviceLayer.BannerService.GetStatistic(uint64(bannerID), body)
+		fmt.Println(err)
+
+		if err != nil {
+			return writeJSON(c, http.StatusInternalServerError, err.Error())
+		}
+
+		return writeJSON(c, http.StatusOK, result)
+	}
+}
 
 func writeJSON(c echo.Context, httpCode int, data any) error {
 	if err := c.JSON(httpCode, data); err != nil {

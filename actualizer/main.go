@@ -22,6 +22,7 @@ import (
 )
 
 func main() {
+	os.Setenv("TZ", "UTC")
 	ctx := context.Background()
 	cfg := config.SLoad()
 
@@ -42,8 +43,6 @@ func main() {
 		BannerCachedRepo: bannerCachedRepo,
 	}}
 
-	fmt.Println(serviceLayer)
-
 	fmt.Printf("Actualizer starting...\n")
 
 	// Создаём новый планировщик задач
@@ -53,6 +52,7 @@ func main() {
 	// Задача будет выполняться каждую минуту
 	_, err = c.AddFunc("* * * * *", func() {
 		fmt.Println("Задача выполняется каждую минуту:", time.Now())
+		serviceLayer.BannerService.ActualizeStats(ctx)
 	})
 	if err != nil {
 		fmt.Println("Ошибка добавления задачи:", err)

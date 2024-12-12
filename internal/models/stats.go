@@ -6,4 +6,5 @@ type Stats struct {
 	ID        uint64    `gorm:"serial;primary_key"`
 	Count     uint64    `gorm:"count"`
 	Timestamp time.Time `gorm:"timestamp"`
+	BannerID  uint64    `gorm:"banner_id"`
 }

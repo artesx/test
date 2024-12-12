@@ -13,11 +13,14 @@ import (
 	"syscall"
 	"test-work/internal/config"
 	"test-work/internal/http_transport"
+	"test-work/internal/repositories/banner"
 	"test-work/internal/services"
 	banner_service "test-work/internal/services/banner"
+	pgStore "test-work/internal/storages/postgres"
 )
 
 func main() {
+	os.Setenv("TZ", "UTC")
 	ctx := context.Background()
 	cfg := config.SLoad()
 
@@ -30,8 +33,16 @@ func main() {
 	}
 	defer producer.Close()
 
+	pdb, err := pgStore.New(cfg.Postgres)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	bannerRepo := banner.NewRepository(pdb)
+
 	serviceLayer := &services.ServiceLayer{BannerService: &banner_service.Service{
-		Producer: producer,
+		Producer:   producer,
+		BannerRepo: bannerRepo,
 	}}
 
 	e := echo.New()

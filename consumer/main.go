@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+	os.Setenv("TZ", "UTC")
 	ctx := context.Background()
 	cfg := config.SLoad()
 
